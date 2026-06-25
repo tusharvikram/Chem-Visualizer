@@ -12,13 +12,12 @@ Interactive 3D molecular geometry viewer built for introductory chemistry (VSEPR
 - **Lone pair visualization** rendered as pink dummy atoms in chemically accurate positions
 - **Hardcoded geometry overrides** for tricky molecules (PCl₅, SF₄, ClF₃, XeF₂, XeF₄, BF₃) so bond angles are textbook-perfect
 - **Info panel** showing molecular formula, weight, polarity, molecular geometry, electron geometry, and key bond angles
-- **Single-file HTML output** with no server required
+- **Single-file HTML output** — no web server required
 
 ## Requirements
 
-```
-rdkit
-```
+- Python 3.8+
+- [RDKit](https://www.rdkit.org/) (the only third-party dependency; everything else is from the standard library)
 
 Install via conda (recommended):
 
@@ -29,10 +28,13 @@ conda install -c conda-forge rdkit
 ## Usage
 
 ```bash
-python chem_visualizer.py
+python chem101_visualizer.py
 ```
 
-This generates `out/chem_gallery_final.html`. Open it in any modern browser.
+This generates `out/chem_gallery_final.html`. Open that file in any modern browser.
+
+> **Note:** The viewer pulls 3Dmol.js and Google Fonts from a CDN, so an internet
+> connection is needed the first time you open the generated page.
 
 ## Molecule Library
 
@@ -66,4 +68,4 @@ This generates `out/chem_gallery_final.html`. Open it in any modern browser.
 
 ## License
 
-MIT
+Released under the MIT License.
