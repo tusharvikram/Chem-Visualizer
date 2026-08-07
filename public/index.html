@@ -89,6 +89,8 @@
       margin-right: 6px; border: 1px solid rgba(0,0,0,0.25); vertical-align: middle;
     }
     .angle-note { margin-top: 8px; font-size: 0.7rem; color: #6b7280; line-height: 1.35; font-style: italic; }
+    .dipole-note { font-size: 0.72rem; color: #6d28d9; line-height: 1.35; }
+    .dipole-note:not(:empty) { margin-top: 6px; }
     .load-error {
       position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px;
       align-items: center; justify-content: center; text-align: center; padding: 30px;
@@ -120,15 +122,22 @@
       </div>
       <div class="toggles">
         <button class="btn active" id="btn-spin" onclick="toggleSpin()">Pause Rotation</button>
+        <button class="btn" id="btn-dipole" onclick="toggleDipole()">Show Dipole</button>
       </div>
       <div class="info-card">
         <div class="info-row"><span class="info-label">Formula</span><span class="info-val" id="val-formula">--</span></div>
         <div class="info-row"><span class="info-label">Mol. Weight</span><span class="info-val" id="val-mw">--</span></div>
         <div class="info-row"><span class="info-label">Polarity</span><span id="val-polarity">--</span></div>
+        <div class="dipole-note" id="dipole-note"></div>
       </div>
       <div class="info-card">
-        <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
+        <!-- Ordered as the problem is worked: count domains, classify, then read
+             off the two geometries and the hybridisation. -->
+        <div class="info-row"><span class="info-label">Electron Domains</span><span class="info-val" id="val-steric">--</span></div>
+        <div class="info-row"><span class="info-label">VSEPR Class</span><span class="info-val" id="val-axe">--</span></div>
         <div class="info-row"><span class="info-label">Electron Geo.</span><span class="info-val" id="val-geoel">--</span></div>
+        <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
+        <div class="info-row"><span class="info-label">Hybridization</span><span class="info-val" id="val-hybrid">--</span></div>
         <div style="margin-top:8px; font-size:0.8rem; color:#666;" id="val-angles"></div>
         <div class="angle-note">Idealized VSEPR angles. Measured values differ where lone pairs compress bonds (ClF₃ is 87.5° in practice).</div>
       </div>
@@ -165,6 +174,25 @@
 "desc": "Bent (V-shaped)",
 "geo_el": "Tetrahedral",
 "fact": "Universal solvent essential for life. \ud83d\udca7",
+"axe": "AX\u2082E\u2082",
+"steric": 4,
+"hybrid": "sp\u00b3",
+"center": "O",
+"lone_pairs": 2,
+"dipole": {
+"cancels": false,
+"magnitude": 1.518,
+"start": [
+-0.016,
+-0.702,
+0.0
+],
+"end": [
+0.042,
+1.904,
+0.0
+]
+},
 "has_lp": true
 }
 },
@@ -187,6 +215,25 @@
 "desc": "Trigonal Pyramidal",
 "geo_el": "Tetrahedral",
 "fact": "Common in fertilizers and cleaners. \ud83c\udf3f",
+"axe": "AX\u2083E",
+"steric": 4,
+"hybrid": "sp\u00b3",
+"center": "N",
+"lone_pairs": 1,
+"dipole": {
+"cancels": false,
+"magnitude": 0.949,
+"start": [
+0.012,
+-0.002,
+-0.598
+],
+"end": [
+-0.037,
+0.005,
+1.795
+]
+},
 "has_lp": true
 }
 },
@@ -210,6 +257,15 @@
 "desc": "Tetrahedral",
 "geo_el": "Tetrahedral",
 "fact": "Main component of natural gas. \ud83d\udd25",
+"axe": "AX\u2084",
+"steric": 4,
+"hybrid": "sp\u00b3",
+"center": "C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": false
 }
 },
@@ -230,6 +286,15 @@
 "desc": "Linear",
 "geo_el": "Linear",
 "fact": "Product of respiration. \ud83c\udf2c\ufe0f",
+"axe": "AX\u2082",
+"steric": 2,
+"hybrid": "sp",
+"center": "C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": true
 }
 },
@@ -253,6 +318,15 @@
 "desc": "Trigonal Planar",
 "geo_el": "Trigonal Planar",
 "fact": "Plant hormone that ripens fruit. \ud83c\udf4c",
+"axe": "AX\u2083",
+"steric": 3,
+"hybrid": "sp\u00b2",
+"center": "C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": false
 }
 },
@@ -274,6 +348,15 @@
 "desc": "Linear",
 "geo_el": "Linear",
 "fact": "Used in welding torches (Acetylene). \ud83d\udca5",
+"axe": "AX\u2082",
+"steric": 2,
+"hybrid": "sp",
+"center": "C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": false
 }
 },
@@ -297,6 +380,25 @@
 "desc": "Trigonal Planar",
 "geo_el": "Trigonal Planar",
 "fact": "Simplest aldehyde, used as a preservative. \ud83e\uddea",
+"axe": "AX\u2083",
+"steric": 3,
+"hybrid": "sp\u00b2",
+"center": "C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": false,
+"magnitude": 1.24,
+"start": [
+-1.062,
+0.162,
+-0.055
+],
+"end": [
+2.652,
+-0.404,
+0.137
+]
+},
 "has_lp": true
 }
 },
@@ -321,6 +423,25 @@
 "desc": "Tetrahedral",
 "geo_el": "Tetrahedral",
 "fact": "Historically used as an anesthetic. \ud83d\ude34",
+"axe": "AX\u2084",
+"steric": 4,
+"hybrid": "sp\u00b3",
+"center": "C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": false,
+"magnitude": 0.96,
+"start": [
+0.019,
+-0.071,
+1.742
+],
+"end": [
+-0.021,
+0.08,
+-1.957
+]
+},
 "has_lp": false
 }
 },
@@ -344,6 +465,15 @@
 "desc": "Trigonal Bipyramidal",
 "geo_el": "Trigonal Bipyramidal",
 "fact": "Example of Expanded Octet (10 electrons on P). \ud83d\udcd0",
+"axe": "AX\u2085",
+"steric": 5,
+"hybrid": "sp\u00b3d",
+"center": "P",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": false
 }
 },
@@ -367,6 +497,25 @@
 "desc": "Seesaw",
 "geo_el": "Trigonal Bipyramidal",
 "fact": "Classic VSEPR exception (1 lone pair). \u2696\ufe0f",
+"axe": "AX\u2084E",
+"steric": 5,
+"hybrid": "sp\u00b3d",
+"center": "S",
+"lone_pairs": 1,
+"dipole": {
+"cancels": false,
+"magnitude": 1.402,
+"start": [
+-0.25,
+-0.433,
+0.0
+],
+"end": [
+1.141,
+1.97,
+0.0
+]
+},
 "has_lp": true
 }
 },
@@ -389,6 +538,25 @@
 "desc": "T-Shaped",
 "geo_el": "Trigonal Bipyramidal",
 "fact": "Extremely reactive interhalogen. \ud83e\udde8",
+"axe": "AX\u2083E\u2082",
+"steric": 5,
+"hybrid": "sp\u00b3d",
+"center": "Cl",
+"lone_pairs": 2,
+"dipole": {
+"cancels": false,
+"magnitude": 0.82,
+"start": [
+-0.5,
+0.0,
+0.0
+],
+"end": [
+3.2,
+0.0,
+0.0
+]
+},
 "has_lp": true
 }
 },
@@ -409,6 +577,15 @@
 "desc": "Linear",
 "geo_el": "Trigonal Bipyramidal",
 "fact": "Noble gases CAN form bonds! (3 Lone Pairs). \ud83c\udf88",
+"axe": "AX\u2082E\u2083",
+"steric": 5,
+"hybrid": "sp\u00b3d",
+"center": "Xe",
+"lone_pairs": 3,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": true
 }
 },
@@ -432,6 +609,15 @@
 "desc": "Square Planar",
 "geo_el": "Octahedral",
 "fact": "Noble gas compound with 2 lone pairs. \ud83e\uddca",
+"axe": "AX\u2084E\u2082",
+"steric": 6,
+"hybrid": "sp\u00b3d\u00b2",
+"center": "Xe",
+"lone_pairs": 2,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": true
 }
 },
@@ -454,6 +640,15 @@
 "desc": "Trigonal Planar",
 "geo_el": "Trigonal Planar",
 "fact": "Incomplete octet (only 6 valence electrons). \u26a0\ufe0f",
+"axe": "AX\u2083",
+"steric": 3,
+"hybrid": "sp\u00b2",
+"center": "B",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.008
+},
 "has_lp": false
 }
 },
@@ -477,6 +672,15 @@
 "desc": "Trigonal Planar (Ring)",
 "geo_el": "Trigonal Planar",
 "fact": "Aromatic ring with delocalized electrons. \ud83c\udf69",
+"axe": "AX\u2083",
+"steric": 3,
+"hybrid": "sp\u00b2",
+"center": "each C",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
 "has_lp": false
 }
 },
@@ -501,6 +705,25 @@
 "desc": "Tetrahedral (C) / Bent (O)",
 "geo_el": "Tetrahedral",
 "fact": "The type of alcohol found in beverages. \ud83c\udf77",
+"axe": "AX\u2082E\u2082",
+"steric": 4,
+"hybrid": "sp\u00b3",
+"center": "O",
+"lone_pairs": 2,
+"dipole": {
+"cancels": false,
+"magnitude": 1.481,
+"start": [
+-0.38,
+-0.221,
+1.456
+],
+"end": [
+0.639,
+0.372,
+-2.451
+]
+},
 "has_lp": true
 }
 },
@@ -525,6 +748,25 @@
 "desc": "Trigonal Planar (at C=O)",
 "geo_el": "Trigonal Planar",
 "fact": "Common solvent and nail polish remover. \ud83d\udc85",
+"axe": "AX\u2083",
+"steric": 3,
+"hybrid": "sp\u00b2",
+"center": "the C=O carbon",
+"lone_pairs": 0,
+"dipole": {
+"cancels": false,
+"magnitude": 1.232,
+"start": [
+0.104,
+-0.477,
+-1.691
+],
+"end": [
+-0.195,
+0.893,
+3.164
+]
+},
 "has_lp": true
 }
 },
@@ -546,6 +788,138 @@
 "desc": "Open Book (Non-planar)",
 "geo_el": "Tetrahedral",
 "fact": "Reactive oxidizer with a twisted structure. \ud83d\udcd8",
+"axe": "AX\u2082E\u2082",
+"steric": 4,
+"hybrid": "sp\u00b3",
+"center": "each O",
+"lone_pairs": 2,
+"dipole": {
+"cancels": false,
+"magnitude": 1.528,
+"start": [
+-0.04,
+0.782,
+-0.105
+],
+"end": [
+0.089,
+-1.752,
+0.513
+]
+},
+"has_lp": true
+}
+},
+{
+"name": "SF\u2086 (Sulfur Hexafluoride)",
+"molblock": "\n     RDKit          3D\n\n  7  6  0  0  0  0  0  0  0  0999 V2000\n    1.6000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 S   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.6000    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    1.6000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000   -1.6000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    1.6000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000   -1.6000 F   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\n  2  4  1  0\n  2  5  1  0\n  2  6  1  0\n  2  7  1  0\nM  END\n",
+"analysis": {
+"formula": "SF\u2086",
+"mw": 146.06,
+"polarity": "Non-Polar",
+"angles": [
+"F-S-F: 180.0\u00b0",
+"F-S-F: 90.0\u00b0",
+"F-S-F: 90.0\u00b0",
+"F-S-F: 90.0\u00b0"
+],
+"elements": [
+"F",
+"S"
+],
+"desc": "Octahedral",
+"geo_el": "Octahedral",
+"fact": "Six bonds, no lone pairs \u2014 the textbook octahedron. \ud83c\udfb2",
+"axe": "AX\u2086",
+"steric": 6,
+"hybrid": "sp\u00b3d\u00b2",
+"center": "S",
+"lone_pairs": 0,
+"dipole": {
+"cancels": true,
+"magnitude": 0.0
+},
+"has_lp": false
+}
+},
+{
+"name": "BrF\u2085 (Bromine Pentafluoride)",
+"molblock": "\n     RDKit          3D\n\n  7  5  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    1.7500 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 Br  0  0  0  0  0  0  0  0  0  0  0  0\n    1.7500    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.7500    0.0000    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    1.7500    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000   -1.7500    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000   -1.2000 R   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\n  2  4  1  0\n  2  5  1  0\n  2  6  1  0\nM  END\n",
+"analysis": {
+"formula": "BrF\u2085",
+"mw": 174.89,
+"polarity": "Polar",
+"angles": [
+"F-Br-F: 90.0\u00b0",
+"F-Br-F: 90.0\u00b0",
+"F-Br-F: 90.0\u00b0",
+"F-Br-F: 90.0\u00b0"
+],
+"elements": [
+"F",
+"Br"
+],
+"desc": "Square Pyramidal",
+"geo_el": "Octahedral",
+"fact": "One lone pair turns the octahedron into a pyramid. \ud83d\udd3a",
+"axe": "AX\u2085E",
+"steric": 6,
+"hybrid": "sp\u00b3d\u00b2",
+"center": "Br",
+"lone_pairs": 1,
+"dipole": {
+"cancels": false,
+"magnitude": 1.02,
+"start": [
+0.0,
+0.0,
+-0.5
+],
+"end": [
+0.0,
+0.0,
+3.25
+]
+},
+"has_lp": true
+}
+},
+{
+"name": "SO\u2082 (Sulfur Dioxide)",
+"molblock": "\n     RDKit          3D\n\n  8  2  0  0  0  0  0  0  0  0999 V2000\n    1.2290    0.7260    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 S   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2290    0.7260    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2220    1.4259    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0\n    1.8387    0.3821    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000   -1.1000    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.2220    1.4259    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.8387    0.3821    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0\n  2  3  2  0\nM  END\n",
+"analysis": {
+"formula": "SO\u2082",
+"mw": 64.06,
+"polarity": "Polar",
+"angles": [
+"O-S-O: 118.9\u00b0"
+],
+"elements": [
+"O",
+"S"
+],
+"desc": "Bent (V-shaped)",
+"geo_el": "Trigonal Planar",
+"fact": "Also bent \u2014 but from trigonal planar, so ~119\u00b0 not 104.5\u00b0. Compare with H\u2082O. \ud83c\udf0b",
+"axe": "AX\u2082E",
+"steric": 3,
+"hybrid": "sp\u00b2",
+"center": "S",
+"lone_pairs": 1,
+"dipole": {
+"cancels": false,
+"magnitude": 0.875,
+"start": [
+0.0,
+-0.5,
+0.0
+],
+"end": [
+0.0,
+2.226,
+0.0
+]
+},
 "has_lp": true
 }
 }
@@ -553,6 +927,8 @@
     let viewer = null;
     let currStyle = 'ball';
     let spinning = true;
+    let showDipole = false;
+    let currIdx = 0;
 
     // Jmol/CPK colours, matching the colorscheme the viewer renders atoms with.
     const ELEMENTS = {
@@ -565,6 +941,7 @@
       P:  ["Phosphorus", "#ff8000"],
       S:  ["Sulfur",     "#ffff30"],
       Cl: ["Chlorine",   "#1ff01f"],
+      Br: ["Bromine",    "#a62929"],
       Xe: ["Xenon",      "#429eb0"]
     };
 
@@ -602,6 +979,7 @@
 
     function loadMol(idx) {
       if(!viewer) return;
+      currIdx = idx;
       const m = DATA[idx];
       viewer.clear();
       viewer.addModel(m.molblock, "sdf");
@@ -618,6 +996,36 @@
         if(atom.label) { viewer.removeLabel(atom.label); atom.label = null; }
       });
       updateUI(m);
+      renderDipole();
+    }
+
+    function toggleDipole() {
+      showDipole = !showDipole;
+      const btn = document.getElementById('btn-dipole');
+      btn.textContent = showDipole ? 'Hide Dipole' : 'Show Dipole';
+      btn.className = showDipole ? 'btn active' : 'btn';
+      renderDipole();
+    }
+
+    function renderDipole() {
+      if(!viewer) return;
+      const note = document.getElementById('dipole-note');
+      // Shapes are separate from styles, so clear them rather than restyling.
+      viewer.removeAllShapes();
+      const d = DATA[currIdx].analysis.dipole;
+      if(!showDipole || !d) {
+        note.textContent = '';
+      } else if(d.cancels) {
+        note.textContent = 'Bond dipoles cancel — no net dipole.';
+      } else {
+        note.textContent = 'Arrow points to the negative end (bond-dipole sum ' + d.magnitude + ').';
+        viewer.addArrow({
+          start: {x: d.start[0], y: d.start[1], z: d.start[2]},
+          end:   {x: d.end[0],   y: d.end[1],   z: d.end[2]},
+          radius: 0.11, radiusRatio: 3.0, mid: 0.78, color: '#7c3aed'
+        });
+      }
+      viewer.render();
     }
 
     function applyStyle() {
@@ -672,6 +1080,13 @@
       polEl.innerHTML = `<span class="badge ${a.polarity === 'Polar' ? 'badge-polar' : 'badge-nonpolar'}">${a.polarity}</span>`;
       document.getElementById('val-desc').textContent = a.desc;
       document.getElementById('val-geoel').textContent = a.geo_el;
+      document.getElementById('val-steric').textContent = a.steric || '--';
+      document.getElementById('val-hybrid').textContent = a.hybrid || '--';
+      // Name the atom only when it is not the single obvious central one, so
+      // "each C" and "the C=O carbon" are not mistaken for the whole molecule.
+      const multiCentre = a.center && a.center.indexOf(' ') !== -1;
+      document.getElementById('val-axe').textContent =
+        (a.axe || '--') + (multiCentre ? ' (at ' + a.center + ')' : '');
       document.getElementById('val-fact').textContent = a.fact;
       document.getElementById('val-angles').innerHTML = a.angles.length > 0 ? a.angles.join("<br>") : "No central angles detected.";
     }

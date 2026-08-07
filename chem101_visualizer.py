@@ -165,12 +165,91 @@ MOLECULES = [
     {
         "name": "H₂O₂ (Hydrogen Peroxide)",
         "smiles": "OO",
-        "desc": "Open Book (Non-planar)", 
-        "geo_el": "Tetrahedral", 
+        "desc": "Open Book (Non-planar)",
+        "geo_el": "Tetrahedral",
         "pol": "Polar",
         "fact": "Reactive oxidizer with a twisted structure. 📘"
+    },
+
+    # --- OCTAHEDRAL FAMILY & THE SECOND 'BENT' ---
+    {
+        "name": "SF₆ (Sulfur Hexafluoride)",
+        "smiles": "FS(F)(F)(F)(F)F",
+        "desc": "Octahedral",
+        "geo_el": "Octahedral",
+        "pol": "Non-Polar",
+        "fact": "Six bonds, no lone pairs — the textbook octahedron. 🎲"
+    },
+    {
+        "name": "BrF₅ (Bromine Pentafluoride)",
+        "smiles": "FBr(F)(F)(F)F",
+        "desc": "Square Pyramidal",
+        "geo_el": "Octahedral",
+        "pol": "Polar",
+        "fact": "One lone pair turns the octahedron into a pyramid. 🔺"
+    },
+    {
+        "name": "SO₂ (Sulfur Dioxide)",
+        "smiles": "O=S=O",
+        "desc": "Bent (V-shaped)",
+        "geo_el": "Trigonal Planar",
+        "pol": "Polar",
+        "fact": "Also bent — but from trigonal planar, so ~119° not 104.5°. Compare with H₂O. 🌋"
     }
 ]
+
+# ============================================================
+# 1b. VSEPR CLASSIFICATION
+# ============================================================
+
+# The atom each molecule's `desc` describes: (bonds, lone pairs, label).
+# AXE notation, steric number and hybridisation are all derived from these two
+# integers, so a typo can make one molecule wrong but can never leave the three
+# fields contradicting each other.
+VSEPR_CENTERS = {
+    "H₂O (Water)":                      (2, 2, "O"),
+    "NH₃ (Ammonia)":                    (3, 1, "N"),
+    "CH₄ (Methane)":                    (4, 0, "C"),
+    "CO₂ (Carbon Dioxide)":             (2, 0, "C"),
+    "C₂H₄ (Ethene)":                    (3, 0, "C"),
+    "C₂H₂ (Ethyne)":                    (2, 0, "C"),
+    "CH₂O (Formaldehyde)":              (3, 0, "C"),
+    "CHCl₃ (Chloroform)":               (4, 0, "C"),
+    "PCl₅ (Phosphorus Pentachloride)":  (5, 0, "P"),
+    "SF₄ (Sulfur Tetrafluoride)":       (4, 1, "S"),
+    "ClF₃ (Chlorine Trifluoride)":      (3, 2, "Cl"),
+    "XeF₂ (Xenon Difluoride)":          (2, 3, "Xe"),
+    "XeF₄ (Xenon Tetrafluoride)":       (4, 2, "Xe"),
+    "BF₃ (Boron Trifluoride)":          (3, 0, "B"),
+    "C₆H₆ (Benzene)":                   (3, 0, "each C"),
+    "C₂H₅OH (Ethanol)":                 (2, 2, "O"),
+    "C₃H₆O (Acetone)":                  (3, 0, "the C=O carbon"),
+    "H₂O₂ (Hydrogen Peroxide)":         (2, 2, "each O"),
+    "SF₆ (Sulfur Hexafluoride)":        (6, 0, "S"),
+    "BrF₅ (Bromine Pentafluoride)":     (5, 1, "Br"),
+    "SO₂ (Sulfur Dioxide)":             (2, 1, "S"),
+}
+
+SUBSCRIPTS = "₀₁₂₃₄₅₆₇₈₉"
+
+# Steric number -> hybridisation, as taught in introductory chemistry. sp³d and
+# sp³d² are the textbook labels for expanded octets; modern computational work
+# finds d-orbital participation to be negligible, but students are examined on
+# these, so they are what the panel reports.
+HYBRIDIZATION = {2: "sp", 3: "sp²", 4: "sp³", 5: "sp³d", 6: "sp³d²"}
+
+def vsepr_facts(name):
+    if name not in VSEPR_CENTERS: return {}
+    x, e, center = VSEPR_CENTERS[name]
+    axe = "AX" + (SUBSCRIPTS[x] if x > 1 else "")
+    if e: axe += "E" + (SUBSCRIPTS[e] if e > 1 else "")
+    return {
+        "axe": axe,
+        "steric": x + e,
+        "hybrid": HYBRIDIZATION.get(x + e, "—"),
+        "center": center,
+        "lone_pairs": e,
+    }
 
 # ============================================================
 # 2. MATH HELPERS (Vector Logic)
@@ -253,6 +332,28 @@ MANUAL_COORDS = {
         (1.3, 0.0, 0.0),
         (-0.65, 1.12, 0.0),
         (-0.65, -1.12, 0.0)
+    ],
+    # Octahedral (6 bonds, no lone pairs) — all angles exactly 90/180
+    "SF₆ (Sulfur Hexafluoride)": [
+        (0.0, 0.0, 0.0), # S
+        (1.6, 0.0, 0.0), (-1.6, 0.0, 0.0),
+        (0.0, 1.6, 0.0), (0.0, -1.6, 0.0),
+        (0.0, 0.0, 1.6), (0.0, 0.0, -1.6)
+    ],
+    # Square Pyramidal (octahedron with one vertex replaced by a lone pair).
+    # Apex on +Z, square base on the XY plane, so the LP sits on -Z.
+    "BrF₅ (Bromine Pentafluoride)": [
+        (0.0, 0.0, 0.0),  # Br
+        (0.0, 0.0, 1.75), # F apical
+        (1.75, 0.0, 0.0), (-1.75, 0.0, 0.0),
+        (0.0, 1.75, 0.0), (0.0, -1.75, 0.0)
+    ],
+    # Bent from TRIGONAL PLANAR (~119°), not from tetrahedral like water.
+    # Bisector on +Y so the single lone pair points along -Y.
+    "SO₂ (Sulfur Dioxide)": [
+        (0.0, 0.0, 0.0),      # S
+        (1.229, 0.726, 0.0),  # O
+        (-1.229, 0.726, 0.0)  # O
     ]
 }
 
@@ -339,6 +440,8 @@ def get_molecule_data(entry):
         'geo_el': entry['geo_el'],
         'fact': entry['fact']
     })
+    analysis.update(vsepr_facts(entry['name']))
+    analysis['dipole'] = compute_dipole(mol)
 
     # --- Add Visual Lone Pairs ---
     mol_viz = add_lone_pairs(mol)
@@ -412,6 +515,22 @@ def add_lone_pairs(mol):
             sum_v = (0,0,0)
             for v in vecs: sum_v = v_add(sum_v, v)
             # The sum points towards the bonds, LP is opposite
+            lps.append(v_add(p0, v_scale(v_norm(v_scale(sum_v, -1)), 1.2)))
+
+        # --- S sp2 (Bent: SO2) ---
+        # 2 bonds, 1 LP. The LP completes the trigonal plane, so it sits opposite
+        # the bisector of the two bonds.
+        elif sym == 'S' and deg == 2:
+            sum_v = (0,0,0)
+            for v in vecs: sum_v = v_add(sum_v, v)
+            lps.append(v_add(p0, v_scale(v_norm(v_scale(sum_v, -1)), 1.1)))
+
+        # --- Br sp3d2 (Square Pyramidal: BrF5) ---
+        # 5 bonds, 1 LP. The four basal bonds cancel, so the sum points at the
+        # apex and the LP occupies the vacant sixth octahedral site opposite it.
+        elif sym == 'Br' and deg == 5:
+            sum_v = (0,0,0)
+            for v in vecs: sum_v = v_add(sum_v, v)
             lps.append(v_add(p0, v_scale(v_norm(v_scale(sum_v, -1)), 1.2)))
 
         # --- Cl sp3d (T-Shaped: ClF3) ---
@@ -494,6 +613,64 @@ def add_lone_pairs(mol):
             conf.SetAtomPosition(new_idx, Point3D(*pos))
             
     return rwmol
+
+# Pauling electronegativities, for the bond-dipole sum below.
+ELECTRONEGATIVITY = {
+    'H': 2.20, 'B': 2.04, 'C': 2.55, 'N': 3.04, 'O': 3.44, 'F': 3.98,
+    'P': 2.19, 'S': 2.58, 'Cl': 3.16, 'Br': 2.96, 'Xe': 2.60,
+}
+
+# Below this the bond dipoles are treated as cancelling. Molecules built by UFF
+# rather than from manual coordinates are not perfectly symmetric, so an exact
+# zero never occurs; the real gap is wide (~0.05 for cancelling molecules
+# against ~0.9+ for polar ones), so the exact cut-off is not delicate.
+DIPOLE_CANCEL_THRESHOLD = 0.25
+
+def compute_dipole(mol):
+    """Sum one vector per bond, pointing at the more electronegative atom and
+    scaled by the electronegativity difference. This is the method taught in
+    class, so the arrow it produces is one students can reproduce by hand."""
+    conf = mol.GetConformer()
+    total = (0.0, 0.0, 0.0)
+    for bond in mol.GetBonds():
+        a, b = bond.GetBeginAtom(), bond.GetEndAtom()
+        en_a = ELECTRONEGATIVITY.get(a.GetSymbol())
+        en_b = ELECTRONEGATIVITY.get(b.GetSymbol())
+        if en_a is None or en_b is None: continue
+        delta = en_b - en_a
+        if abs(delta) < 1e-9: continue
+        pa, pb = conf.GetAtomPosition(a.GetIdx()), conf.GetAtomPosition(b.GetIdx())
+        direction = v_norm(v_sub((pb.x, pb.y, pb.z), (pa.x, pa.y, pa.z)))
+        # A negative delta means A is the more electronegative end; flipping the
+        # sign points the vector back towards it.
+        total = v_add(total, v_scale(direction, delta))
+
+    magnitude = v_len(total)
+    if magnitude < DIPOLE_CANCEL_THRESHOLD:
+        return {"cancels": True, "magnitude": round(magnitude, 3)}
+
+    # Draw the arrow through the molecule's centre, pointing at the negative end.
+    positions = [conf.GetAtomPosition(a.GetIdx()) for a in mol.GetAtoms()]
+    centroid = (
+        sum(p.x for p in positions) / len(positions),
+        sum(p.y for p in positions) / len(positions),
+        sum(p.z for p in positions) / len(positions),
+    )
+    unit = v_norm(total)
+
+    # Span the molecule rather than using a fixed length, and overshoot the far
+    # end so the head clears the atoms. A head buried inside the spheres reads as
+    # though the arrow points the other way, which inverts the thing being taught.
+    projections = [v_dot(v_sub((p.x, p.y, p.z), centroid), unit) for p in positions]
+    tail = min(projections) - 0.5
+    head = max(projections) + 1.5
+
+    return {
+        "cancels": False,
+        "magnitude": round(magnitude, 3),
+        "start": [round(c, 3) for c in v_add(centroid, v_scale(unit, tail))],
+        "end":   [round(c, 3) for c in v_add(centroid, v_scale(unit, head))],
+    }
 
 def analyze_properties(mol):
     atoms = list(mol.GetAtoms())
@@ -625,6 +802,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       margin-right: 6px; border: 1px solid rgba(0,0,0,0.25); vertical-align: middle;
     }
     .angle-note { margin-top: 8px; font-size: 0.7rem; color: #6b7280; line-height: 1.35; font-style: italic; }
+    .dipole-note { font-size: 0.72rem; color: #6d28d9; line-height: 1.35; }
+    .dipole-note:not(:empty) { margin-top: 6px; }
     .load-error {
       position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px;
       align-items: center; justify-content: center; text-align: center; padding: 30px;
@@ -656,15 +835,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
       <div class="toggles">
         <button class="btn active" id="btn-spin" onclick="toggleSpin()">Pause Rotation</button>
+        <button class="btn" id="btn-dipole" onclick="toggleDipole()">Show Dipole</button>
       </div>
       <div class="info-card">
         <div class="info-row"><span class="info-label">Formula</span><span class="info-val" id="val-formula">--</span></div>
         <div class="info-row"><span class="info-label">Mol. Weight</span><span class="info-val" id="val-mw">--</span></div>
         <div class="info-row"><span class="info-label">Polarity</span><span id="val-polarity">--</span></div>
+        <div class="dipole-note" id="dipole-note"></div>
       </div>
       <div class="info-card">
-        <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
+        <!-- Ordered as the problem is worked: count domains, classify, then read
+             off the two geometries and the hybridisation. -->
+        <div class="info-row"><span class="info-label">Electron Domains</span><span class="info-val" id="val-steric">--</span></div>
+        <div class="info-row"><span class="info-label">VSEPR Class</span><span class="info-val" id="val-axe">--</span></div>
         <div class="info-row"><span class="info-label">Electron Geo.</span><span class="info-val" id="val-geoel">--</span></div>
+        <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
+        <div class="info-row"><span class="info-label">Hybridization</span><span class="info-val" id="val-hybrid">--</span></div>
         <div style="margin-top:8px; font-size:0.8rem; color:#666;" id="val-angles"></div>
         <div class="angle-note">Idealized VSEPR angles. Measured values differ where lone pairs compress bonds (ClF₃ is 87.5° in practice).</div>
       </div>
@@ -687,6 +873,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let viewer = null;
     let currStyle = 'ball';
     let spinning = true;
+    let showDipole = false;
+    let currIdx = 0;
 
     // Jmol/CPK colours, matching the colorscheme the viewer renders atoms with.
     const ELEMENTS = {
@@ -699,6 +887,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       P:  ["Phosphorus", "#ff8000"],
       S:  ["Sulfur",     "#ffff30"],
       Cl: ["Chlorine",   "#1ff01f"],
+      Br: ["Bromine",    "#a62929"],
       Xe: ["Xenon",      "#429eb0"]
     };
 
@@ -736,6 +925,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function loadMol(idx) {
       if(!viewer) return;
+      currIdx = idx;
       const m = DATA[idx];
       viewer.clear();
       viewer.addModel(m.molblock, "sdf");
@@ -752,6 +942,36 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         if(atom.label) { viewer.removeLabel(atom.label); atom.label = null; }
       });
       updateUI(m);
+      renderDipole();
+    }
+
+    function toggleDipole() {
+      showDipole = !showDipole;
+      const btn = document.getElementById('btn-dipole');
+      btn.textContent = showDipole ? 'Hide Dipole' : 'Show Dipole';
+      btn.className = showDipole ? 'btn active' : 'btn';
+      renderDipole();
+    }
+
+    function renderDipole() {
+      if(!viewer) return;
+      const note = document.getElementById('dipole-note');
+      // Shapes are separate from styles, so clear them rather than restyling.
+      viewer.removeAllShapes();
+      const d = DATA[currIdx].analysis.dipole;
+      if(!showDipole || !d) {
+        note.textContent = '';
+      } else if(d.cancels) {
+        note.textContent = 'Bond dipoles cancel — no net dipole.';
+      } else {
+        note.textContent = 'Arrow points to the negative end (bond-dipole sum ' + d.magnitude + ').';
+        viewer.addArrow({
+          start: {x: d.start[0], y: d.start[1], z: d.start[2]},
+          end:   {x: d.end[0],   y: d.end[1],   z: d.end[2]},
+          radius: 0.11, radiusRatio: 3.0, mid: 0.78, color: '#7c3aed'
+        });
+      }
+      viewer.render();
     }
 
     function applyStyle() {
@@ -806,6 +1026,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       polEl.innerHTML = `<span class="badge ${a.polarity === 'Polar' ? 'badge-polar' : 'badge-nonpolar'}">${a.polarity}</span>`;
       document.getElementById('val-desc').textContent = a.desc;
       document.getElementById('val-geoel').textContent = a.geo_el;
+      document.getElementById('val-steric').textContent = a.steric || '--';
+      document.getElementById('val-hybrid').textContent = a.hybrid || '--';
+      // Name the atom only when it is not the single obvious central one, so
+      // "each C" and "the C=O carbon" are not mistaken for the whole molecule.
+      const multiCentre = a.center && a.center.indexOf(' ') !== -1;
+      document.getElementById('val-axe').textContent =
+        (a.axe || '--') + (multiCentre ? ' (at ' + a.center + ')' : '');
       document.getElementById('val-fact').textContent = a.fact;
       document.getElementById('val-angles').innerHTML = a.angles.length > 0 ? a.angles.join("<br>") : "No central angles detected.";
     }
@@ -818,15 +1045,32 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 # 6. BUILDER
 # ============================================================
 
+def check_dipole_agrees(entry, analysis):
+    """The geometry and the stated polarity are independent claims, so compare
+    them. A wrong coordinate set usually breaks a cancellation, which makes this
+    a cheap check on the geometry too."""
+    dip = analysis.get('dipole') or {}
+    computed = "Non-Polar" if dip.get('cancels') else "Polar"
+    if computed != entry['pol']:
+        return (f"    [Polarity mismatch] {entry['name']}: listed {entry['pol']}, "
+                f"but the bond dipoles sum to {dip.get('magnitude')} "
+                f"(threshold {DIPOLE_CANCEL_THRESHOLD}) -> {computed}")
+    return None
+
 def build_final():
     print("Building Ultimate Chem 101 Gallery...")
     final_data = []
+    warnings = []
 
     for entry in MOLECULES:
         print(f"  - Processing: {entry['name']}")
         try:
             data = get_molecule_data(entry)
             if data:
+                warn = check_dipole_agrees(entry, data['analysis'])
+                if warn:
+                    print(warn)
+                    warnings.append(warn)
                 final_item = {
                     "name": entry['name'],
                     "molblock": data['molblock'],
@@ -851,6 +1095,11 @@ def build_final():
 
     print("-" * 30)
     print(f"Built {len(final_data)}/{len(MOLECULES)} molecules.")
+    if warnings:
+        print(f"{len(warnings)} polarity mismatch(es) — geometry and stated polarity disagree:")
+        for w in warnings: print(w)
+    else:
+        print("Polarity cross-check: all molecules agree with their geometry.")
     for out_path in out_paths:
         print(f"SUCCESS! ✨ {os.path.abspath(out_path)}")
 
