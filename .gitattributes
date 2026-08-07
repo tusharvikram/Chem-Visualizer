@@ -1,0 +1,2 @@
+# Vendored third-party build output — keep byte-identical to upstream.
+public/vendor/** -text linguist-vendored

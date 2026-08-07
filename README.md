@@ -11,8 +11,10 @@ Interactive 3D molecular geometry viewer built for introductory chemistry (VSEPR
 - **3D interactive viewer** powered by [3Dmol.js](https://3dmol.csb.pitt.edu/) with Ball & Stick and Space Fill modes
 - **Lone pair visualization** rendered as pink dummy atoms in chemically accurate positions
 - **Hardcoded geometry overrides** for tricky molecules (PCl₅, SF₄, ClF₃, XeF₂, XeF₄, BF₃) so bond angles are textbook-perfect
-- **Info panel** showing molecular formula, weight, polarity, molecular geometry, electron geometry, and key bond angles
-- **Single-file HTML output** — no web server required
+- **Info panel** showing molecular formula, average molecular weight, polarity, molecular geometry, electron geometry, and key bond angles
+- **Per-molecule legend** listing only the elements actually present, in Jmol colours
+- **Pause/resume rotation** so a fixed orientation can be held while explaining a geometry
+- **Single-file HTML output** — no web server required, and no CDN at runtime
 
 ## Requirements
 
@@ -31,10 +33,34 @@ conda install -c conda-forge rdkit
 python chem101_visualizer.py
 ```
 
-This generates `out/chem_gallery_final.html`. Open that file in any modern browser.
+This writes the same page to two places:
 
-> **Note:** The viewer pulls 3Dmol.js and Google Fonts from a CDN, so an internet
-> connection is needed the first time you open the generated page.
+- `out/chem_gallery_final.html` — scratch copy, gitignored
+- `public/index.html` — the deployable site
+
+Open either in any modern browser, or serve the folder:
+
+```bash
+python -m http.server 4321 --directory public
+```
+
+3Dmol.js is vendored in `public/vendor/`, so the viewer works with no internet
+connection. Only the Inter webfont is remote, and it falls back to a system font.
+
+> **Note on bond angles:** geometries use *idealized* VSEPR angles. Real molecules
+> deviate where lone pairs compress bonds — ClF₃ is 87.5° in practice, not 90°.
+
+## Deployment
+
+The site is static, so RDKit never runs on the server — the Python script is a
+build step and `public/` is committed. Deploy with:
+
+```bash
+vercel --prod
+```
+
+After editing molecules, re-run the build so `public/index.html` is regenerated,
+then redeploy.
 
 ## Molecule Library
 

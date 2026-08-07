@@ -10,7 +10,7 @@ Updates:
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, Descriptors
 from rdkit.Geometry import Point3D
 import math
 import json
@@ -288,12 +288,35 @@ def apply_manual_geometry(mol, name):
 
 def get_molecule_data(entry):
     mol = Chem.MolFromSmiles(entry['smiles'])
-    if not mol: return None
-    mol = Chem.AddHs(mol)
-    
+    strict = mol is not None
+
+    if not strict:
+        # Cl is capped at valence 1 in RDKit's model, so ClF₃ is rejected outright
+        # (P and S allow hypervalence, which is why PCl₅ and SF₄ parse fine).
+        # Re-parse without the valence check and sanitize everything else.
+        mol = Chem.MolFromSmiles(entry['smiles'], sanitize=False)
+        if not mol: return None
+        mol.UpdatePropertyCache(strict=False)
+        Chem.SanitizeMol(
+            mol,
+            sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_PROPERTIES
+        )
+        if entry['name'] not in MANUAL_COORDS:
+            # AddHs and EmbedMolecule both re-run the valence check, so there is no
+            # way to generate coordinates for these without hardcoded ones.
+            return None
+
+    if strict:
+        mol = Chem.AddHs(mol)
+
     # 1. Generate Basic 3D
-    AllChem.EmbedMolecule(mol)
-    
+    if strict:
+        AllChem.EmbedMolecule(mol)
+    else:
+        # These molecules carry no hydrogens and always have manual coordinates,
+        # so seed an empty conformer for apply_manual_geometry to fill in.
+        mol.AddConformer(Chem.Conformer(mol.GetNumAtoms()), assignId=True)
+
     # 2. OVERRIDE with Manual Coordinates if available (The "Fix")
     if entry['name'] in MANUAL_COORDS:
         mol = apply_manual_geometry(mol, entry['name'])
@@ -319,7 +342,8 @@ def get_molecule_data(entry):
 
     # --- Add Visual Lone Pairs ---
     mol_viz = add_lone_pairs(mol)
-    
+    analysis['has_lp'] = any(a.GetAtomicNum() == 0 for a in mol_viz.GetAtoms())
+
     return {
         "molblock": Chem.MolToMolBlock(mol_viz),
         "analysis": analysis
@@ -404,19 +428,25 @@ def add_lone_pairs(mol):
             # Let's find the sum vector (points along X).
             sum_v = (0,0,0)
             for v in vecs: sum_v = v_add(sum_v, v)
-            base = v_norm(sum_v) # Points +X
-            
-            # Find a normal to the T-plane (Y axis approx)
-            # Cross product of two non-collinear bonds
-            normal = v_norm(v_cross(vecs[0], vecs[1])) 
-            if v_len(normal) < 0.1: normal = v_norm(v_cross(vecs[0], vecs[2]))
+            base = v_norm(sum_v) # Points +X (the axial bonds cancel out)
 
-            # Rotate base vector by +/- 120 deg around normal
-            # Or simply: LP1 is rotation of Base, LP2 is rotation.
-            # Actually LPs are 120 deg from the Bond in the equatorial plane.
-            # Ideally: cos(120)*Base + sin(120)*Cross(Normal, Base)
+            # Rotate around the AXIAL axis, not the normal of the T-plane. Using the
+            # T-plane normal puts both lone pairs in the same plane as the axial
+            # bonds; they belong in the equatorial plane, 120 deg either side of the
+            # equatorial bond. The axial axis is the most antiparallel bond pair.
+            axis = None
+            most_opposed = 0.0
+            for i in range(len(vecs)):
+                for j in range(i + 1, len(vecs)):
+                    d = v_dot(vecs[i], vecs[j])
+                    if d < most_opposed:
+                        most_opposed = d
+                        axis = v_norm(v_sub(vecs[i], vecs[j]))
+            if axis is None:
+                axis = v_norm(v_cross(vecs[0], vecs[1]))
+
             sin_120, cos_120 = 0.866, -0.5
-            perp = v_norm(v_cross(normal, base))
+            perp = v_norm(v_cross(axis, base))
             
             lp1 = v_add(v_scale(base, cos_120), v_scale(perp, sin_120))
             lp2 = v_add(v_scale(base, cos_120), v_scale(perp, -sin_120))
@@ -472,8 +502,18 @@ def analyze_properties(mol):
     # Formula is now overridden in get_molecule_data, so this is just placeholder
     # But we still need mass and angles
     
-    mw = round(Chem.rdMolDescriptors.CalcExactMolWt(mol), 2)
-    
+    # Average molecular weight, NOT CalcExactMolWt (monoisotopic). Students add up
+    # periodic-table masses, which are averages: CHCl₃ is 119.38 g/mol, not 117.91.
+    mw = round(Descriptors.MolWt(mol), 2)
+
+    # Elements actually present, so the legend can be built per molecule instead of
+    # being hardcoded to H/C/O (the library also contains F, Cl, S, P, Xe, B, N).
+    elements = []
+    for a in atoms:
+        sym = a.GetSymbol()
+        if a.GetAtomicNum() == 0 or sym in elements: continue
+        elements.append(sym)
+
     # Angles (First 4 found)
     conf = mol.GetConformer()
     angles = []
@@ -488,7 +528,7 @@ def analyze_properties(mol):
     
     # Polarity is overridden too
     
-    return {"formula": "", "mw": mw, "polarity": "", "angles": angles[:4]}
+    return {"formula": "", "mw": mw, "polarity": "", "angles": angles[:4], "elements": elements}
 
 # ============================================================
 # 5. PREMIUM HTML TEMPLATE
@@ -499,10 +539,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="utf-8" />
   <title>Chem 101: Ultimate Visualizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
-  
+  <!-- Served locally, not from a CDN: a blocked or down 3Dmol host would otherwise
+       leave a blank viewer with no error, which is fatal mid-lecture. -->
+  <script src="vendor/3Dmol-min.js"></script>
+
   <style>
     :root {
       --primary: #6366f1;
@@ -514,7 +557,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg-grad);
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
@@ -574,7 +617,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       padding: 10px 15px; border-radius: 12px; font-size: 0.8rem;
       box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 5px;
     }
-    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .dot {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      margin-right: 6px; border: 1px solid rgba(0,0,0,0.25); vertical-align: middle;
+    }
+    .angle-note { margin-top: 8px; font-size: 0.7rem; color: #6b7280; line-height: 1.35; font-style: italic; }
+    .load-error {
+      position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px;
+      align-items: center; justify-content: center; text-align: center; padding: 30px;
+      background: #fff; color: #7f1d1d; font-size: 0.9rem; line-height: 1.5;
+    }
+    /* Author styles beat the UA [hidden] rule, so display:none must be restated. */
+    .load-error[hidden] { display: none; }
     @media (max-width: 800px) {
       .dashboard { grid-template-columns: 1fr; height: auto; }
       .viewer-area { height: 400px; }
@@ -597,6 +651,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <button class="btn active" id="btn-ball" onclick="setStyle('ball')">Ball & Stick</button>
         <button class="btn" id="btn-space" onclick="setStyle('space')">Space Fill</button>
       </div>
+      <div class="toggles">
+        <button class="btn active" id="btn-spin" onclick="toggleSpin()">Pause Rotation</button>
+      </div>
       <div class="info-card">
         <div class="info-row"><span class="info-label">Formula</span><span class="info-val" id="val-formula">--</span></div>
         <div class="info-row"><span class="info-label">Mol. Weight</span><span class="info-val" id="val-mw">--</span></div>
@@ -606,17 +663,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
         <div class="info-row"><span class="info-label">Electron Geo.</span><span class="info-val" id="val-geoel">--</span></div>
         <div style="margin-top:8px; font-size:0.8rem; color:#666;" id="val-angles"></div>
+        <div class="angle-note">Idealized VSEPR angles. Measured values differ where lone pairs compress bonds (ClF₃ is 87.5° in practice).</div>
       </div>
       <div class="fact-box" id="val-fact">Select a molecule to learn more.</div>
     </div>
 
     <div class="viewer-area">
       <div id="viewer"></div>
-      <div class="legend">
-        <div><span class="dot" style="background:#ec4899;"></span>Lone Pair</div>
-        <div><span class="dot" style="background:#ddd;"></span>Hydrogen</div>
-        <div><span class="dot" style="background:#333;"></span>Carbon</div>
-        <div><span class="dot" style="background:#f00;"></span>Oxygen</div>
+      <div class="legend" id="legend"></div>
+      <div class="load-error" id="load-error" hidden>
+        <strong>3D viewer failed to load.</strong>
+        <span>vendor/3Dmol-min.js could not be read, so molecules cannot be drawn.
+        The molecule data on the left is still correct.</span>
       </div>
     </div>
   </div>
@@ -625,17 +683,53 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     const DATA = __DATA__;
     let viewer = null;
     let currStyle = 'ball';
-    
-    window.onload = function() {
-      viewer = $3Dmol.createViewer(document.getElementById('viewer'), { backgroundColor: 'white' });
+    let spinning = true;
+
+    // Jmol/CPK colours, matching the colorscheme the viewer renders atoms with.
+    const ELEMENTS = {
+      H:  ["Hydrogen",   "#ffffff"],
+      B:  ["Boron",      "#ffb5b5"],
+      C:  ["Carbon",     "#909090"],
+      N:  ["Nitrogen",   "#3050f8"],
+      O:  ["Oxygen",     "#ff0d0d"],
+      F:  ["Fluorine",   "#90e050"],
+      P:  ["Phosphorus", "#ff8000"],
+      S:  ["Sulfur",     "#ffff30"],
+      Cl: ["Chlorine",   "#1ff01f"],
+      Xe: ["Xenon",      "#429eb0"]
+    };
+
+    window.onload = function() { waitForLib(0); };
+
+    // Poll rather than checking once: the library is ~500KB and can still be
+    // settling on a slow disk or connection when load fires. Only give up after
+    // a few seconds, and even then keep the data panel usable.
+    function waitForLib(attempt) {
+      if (typeof $3Dmol !== 'undefined') { initApp(); return; }
+      if (attempt > 60) { initFallback(); return; }
+      setTimeout(function() { waitForLib(attempt + 1); }, 100);
+    }
+
+    function populateSelect(onPick) {
       const sel = document.getElementById('mol-select');
       DATA.forEach((m, i) => {
         let opt = document.createElement('option');
         opt.value = i; opt.textContent = m.name; sel.appendChild(opt);
       });
-      sel.addEventListener('change', () => loadMol(sel.value));
+      sel.addEventListener('change', () => onPick(sel.value));
+    }
+
+    function initApp() {
+      viewer = $3Dmol.createViewer(document.getElementById('viewer'), { backgroundColor: 'white' });
+      populateSelect(loadMol);
       loadMol(0);
-    };
+    }
+
+    function initFallback() {
+      document.getElementById('load-error').hidden = false;
+      populateSelect(i => updateUI(DATA[i]));
+      updateUI(DATA[0]);
+    }
 
     function loadMol(idx) {
       if(!viewer) return;
@@ -643,7 +737,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       viewer.clear();
       viewer.addModel(m.molblock, "sdf");
       applyStyle();
-      viewer.spin('y', 0.5); 
+      viewer.spin(spinning ? 'y' : false, 0.5);
       viewer.setHoverable({}, true, function(atom, viewer, event, container) {
         if(!atom.label) {
           let txt = atom.elem === '*' ? 'Lone Pair' : atom.elem;
@@ -659,7 +753,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function applyStyle() {
       if(currStyle === 'ball') {
-        viewer.setStyle({not:{elem:'*'}}, { stick: {radius: 0.15, color:'spectrum'}, sphere: {scale: 0.28, colorscheme:'Jmol'} });
+        // Jmol, not 'spectrum': spectrum rainbows bonds by atom index, which means
+        // nothing chemically and fights the element colours on the spheres.
+        viewer.setStyle({not:{elem:'*'}}, { stick: {radius: 0.15, colorscheme:'Jmol'}, sphere: {scale: 0.28, colorscheme:'Jmol'} });
       } else {
         viewer.setStyle({not:{elem:'*'}}, { sphere: {scale: 0.9, colorscheme:'Jmol'} });
       }
@@ -674,8 +770,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       applyStyle();
     }
 
+    function toggleSpin() {
+      spinning = !spinning;
+      const btn = document.getElementById('btn-spin');
+      btn.textContent = spinning ? 'Pause Rotation' : 'Resume Rotation';
+      btn.className = spinning ? 'btn active' : 'btn';
+      if (viewer) viewer.spin(spinning ? 'y' : false, 0.5);
+    }
+
+    function renderLegend(a) {
+      const box = document.getElementById('legend');
+      box.innerHTML = '';
+      (a.elements || []).forEach(sym => {
+        const [label, color] = ELEMENTS[sym] || [sym, '#bbbbbb'];
+        const row = document.createElement('div');
+        row.innerHTML = '<span class="dot" style="background:' + color + '"></span>' + label;
+        box.appendChild(row);
+      });
+      if (a.has_lp) {
+        const row = document.createElement('div');
+        row.innerHTML = '<span class="dot" style="background:#ec4899"></span>Lone Pair';
+        box.appendChild(row);
+      }
+    }
+
     function updateUI(m) {
       const a = m.analysis;
+      renderLegend(a);
       document.getElementById('val-formula').textContent = a.formula;
       document.getElementById('val-mw').textContent = a.mw + " g/mol";
       const polEl = document.getElementById('val-polarity');
@@ -714,17 +835,21 @@ def build_final():
         except Exception as e:
             print(f"    [Error] Failed on {entry['name']}: {e}")
 
-    out_path = "out/chem_gallery_final.html"
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    
     json_str = json.dumps(final_data, indent=0).replace("</", "<\\/")
     html = HTML_TEMPLATE.replace("__DATA__", json_str)
-    
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(html)
-    
+
+    # public/index.html is what Vercel serves, so write it here rather than copying
+    # by hand — a forgotten copy step means deploying a stale page.
+    out_paths = ["out/chem_gallery_final.html", "public/index.html"]
+    for out_path in out_paths:
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(html)
+
     print("-" * 30)
-    print(f"SUCCESS! ✨ Open: {os.path.abspath(out_path)}")
+    print(f"Built {len(final_data)}/{len(MOLECULES)} molecules.")
+    for out_path in out_paths:
+        print(f"SUCCESS! ✨ {os.path.abspath(out_path)}")
 
 if __name__ == "__main__":
     build_final()
