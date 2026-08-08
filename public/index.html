@@ -15,20 +15,29 @@
 
   <style>
     :root {
-      --primary: #6366f1;
-      --accent: #ec4899;
-      --bg-grad: linear-gradient(135deg, #a5b4fc 0%, #c084fc 100%);
-      --glass: rgba(255, 255, 255, 0.7);
-      --glass-border: rgba(255, 255, 255, 0.5);
-      --text-main: #1f2937;
+      /* Contrast ratios against the card surface are noted per token. Projected
+         slides wash light colours out, so body text targets 7:1 rather than the
+         4.5:1 WCAG AA minimum. The previous glass palette measured 3.8-4.3:1. */
+      --primary: #4338ca;      /* 7.9:1  interactive + the molecular geometry value */
+      --ink: #12161c;          /* 18.2:1 primary values */
+      --ink-soft: #4a5563;     /* 7.6:1  row labels */
+      --ink-muted: #52525b;    /* 7.7:1  notes and the credit line */
+      --page: #e9ecf2;
+      --surface: #ffffff;
+      --surface-sunken: #f4f6f9;
+      --border: #e4e8ee;
+      --border-strong: #dfe3ea;
+      /* Pink belongs to lone pairs and nothing else. It carries meaning in the
+         viewer and in the legend, so it is never used as decoration. */
+      --lone-pair: #ec4899;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg-grad);
+      background: var(--page);
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      padding: 20px; color: var(--text-main);
+      padding: 20px; color: var(--ink);
     }
     .dashboard {
       display: grid; grid-template-columns: 350px 1fr; gap: 20px;
@@ -40,53 +49,59 @@
       height: auto;
       min-height: min(600px, calc(100vh - 40px));
       max-height: calc(100vh - 40px);
-      background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border); border-radius: 24px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;
+      /* Solid, not frosted: the translucent stack was pulling every foreground
+         colour toward the background and breaking contrast. */
+      background: var(--surface);
+      border: 1px solid var(--border-strong); border-radius: 20px;
+      box-shadow: 0 12px 32px -12px rgba(18, 22, 28, 0.18); overflow: hidden;
     }
     .sidebar {
-      padding: 18px 24px; border-right: 1px solid rgba(255,255,255,0.3);
+      padding: 18px 24px; border-right: 1px solid var(--border);
       display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
     }
-    h1 { font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; line-height: 1.1; }
-    h1 span { background: -webkit-linear-gradient(45deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .subtitle { font-size: 0.9rem; color: #6b7280; font-weight: 500; margin-top: 5px; }
-    label { font-size: 0.85rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; }
+    h1 { font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); }
+    h1 span { color: var(--primary); }
+    .subtitle { font-size: 0.9rem; color: var(--ink-muted); font-weight: 500; margin-top: 5px; }
+    label { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
     select {
-      width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #d1d5db;
-      background: rgba(255,255,255,0.5); font-family: inherit; font-size: 1rem; cursor: pointer; transition: all 0.2s;
+      width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #d6dae2;
+      background: #fff; color: var(--ink);
+      font-family: inherit; font-size: 1rem; cursor: pointer; transition: all 0.15s;
     }
-    select:hover { border-color: var(--primary); background: #fff; }
+    select:hover { border-color: var(--primary); }
+    select:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
     .toggles { display: flex; gap: 10px; }
     .btn {
-      flex: 1; padding: 10px; border: none; border-radius: 10px; background: #fff;
+      flex: 1; padding: 10px; border: 1px solid var(--border-strong); border-radius: 10px; background: #fff;
       font-weight: 600; color: var(--primary); cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s;
+      font-family: inherit; transition: all 0.15s;
     }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
-    .btn.active { background: var(--primary); color: #fff; }
+    .btn:hover { border-color: var(--primary); background: #f7f8fc; }
+    .btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn.active:hover { background: #3730a3; }
+    .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
     .info-card {
-      background: rgba(255,255,255,0.4); border-radius: 16px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.6);
+      background: var(--surface-sunken); border-radius: 12px; padding: 12px 14px; border: 1px solid var(--border);
     }
     .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
     .info-row:last-of-type { margin-bottom: 0; }
-    .info-label { color: #6b7280; }
-    .info-val { font-weight: 600; }
+    .info-label { color: var(--ink-soft); }
+    .info-val { font-weight: 600; color: var(--ink); }
     .badge {
       display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
     }
-    .badge-polar { background: #dbeafe; color: #1e40af; }
-    .badge-nonpolar { background: #f3f4f6; color: #374151; }
+    .badge-polar { background: #dbe4ff; color: #2b3a8f; }
+    .badge-nonpolar { background: #e8eaee; color: #33383f; }
     .fact-box {
-      margin-top: auto; background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
-      border-left: 4px solid var(--accent); padding: 12px; border-radius: 0 10px 10px 0;
-      font-size: 0.85rem; font-style: italic; line-height: 1.4;
+      margin-top: auto; background: var(--surface-sunken);
+      border-left: 3px solid var(--primary); padding: 10px 12px; border-radius: 0 8px 8px 0;
+      font-size: 0.85rem; font-style: italic; line-height: 1.4; color: var(--ink-soft);
     }
     .card-divider {
-      height: 1px; background: rgba(31,41,55,0.10); margin: 9px 0;
+      height: 1px; background: var(--border); margin: 9px 0;
     }
     .credit {
-      font-size: 0.78rem; color: #6b7280; text-align: center;
+      font-size: 0.78rem; color: var(--ink-muted); text-align: center;
       padding-top: 2px; letter-spacing: 0.01em;
     }
     /* Laptops at high display scaling leave a short viewport — a 16" 2880x1800
@@ -105,25 +120,25 @@
     }
     .credit a {
       color: var(--primary); font-weight: 600; text-decoration: none;
-      border-bottom: 1px solid rgba(99, 102, 241, 0.35); transition: all 0.15s;
+      border-bottom: 1px solid rgba(67, 56, 202, 0.4); transition: all 0.15s;
     }
-    .credit a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    .credit a:hover { border-bottom-color: var(--primary); }
     .viewer-area {
-      position: relative; background: #fff; margin: 10px; border-radius: 20px;
-      overflow: hidden; box-shadow: inset 0 0 40px rgba(0,0,0,0.02);
+      position: relative; background: #fff; margin: 10px; border-radius: 14px;
+      border: 1px solid var(--border); overflow: hidden;
     }
     #viewer { position: relative; width: 100%; height: 100%; outline: none; }
     .legend {
-      position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9);
-      padding: 10px 15px; border-radius: 12px; font-size: 0.8rem;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 5px;
+      position: absolute; bottom: 16px; right: 16px; background: rgba(255,255,255,0.96);
+      padding: 9px 13px; border-radius: 10px; font-size: 0.8rem; color: var(--ink);
+      border: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px;
     }
     .dot {
       display: inline-block; width: 10px; height: 10px; border-radius: 50%;
       margin-right: 6px; border: 1px solid rgba(0,0,0,0.25); vertical-align: middle;
     }
-    .angle-note { margin-top: 8px; font-size: 0.7rem; color: #6b7280; line-height: 1.35; font-style: italic; }
-    .dipole-note { font-size: 0.72rem; color: #6d28d9; line-height: 1.35; }
+    .angle-note { margin-top: 8px; font-size: 0.7rem; color: var(--ink-muted); line-height: 1.35; font-style: italic; }
+    .dipole-note { font-size: 0.72rem; color: var(--primary); line-height: 1.35; }
     .dipole-note:not(:empty) { margin-top: 6px; }
     .load-error {
       position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px;
