@@ -178,7 +178,7 @@ MOLECULES = [
         "desc": "Octahedral",
         "geo_el": "Octahedral",
         "pol": "Non-Polar",
-        "fact": "Six bonds, no lone pairs — the textbook octahedron. 🎲"
+        "fact": "Six bonds and no lone pairs, the textbook octahedron. 🎲"
     },
     {
         "name": "BrF₅ (Bromine Pentafluoride)",
@@ -194,7 +194,7 @@ MOLECULES = [
         "desc": "Bent (V-shaped)",
         "geo_el": "Trigonal Planar",
         "pol": "Polar",
-        "fact": "Also bent — but from trigonal planar, so ~119° not 104.5°. Compare with H₂O. 🌋"
+        "fact": "Also bent, but from trigonal planar, so ~119° not 104.5°. Compare with H₂O. 🌋"
     }
 ]
 
