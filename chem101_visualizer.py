@@ -735,7 +735,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       --ink: #12161c;          /* 18.2:1 primary values */
       --ink-soft: #4a5563;     /* 7.6:1  row labels */
       --ink-muted: #52525b;    /* 7.7:1  notes and the credit line */
-      --page: #e9ecf2;
+      /* A quiet nod to the original violet. Safe to tint now that the card is
+         opaque: nothing reads against this, so it costs no contrast. */
+      --page: linear-gradient(150deg, #e6e4f4 0%, #edeaf7 52%, #f3ecf6 100%);
       --surface: #ffffff;
       --surface-sunken: #f4f6f9;
       --border: #e4e8ee;
@@ -747,7 +749,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: var(--page);
+      background: var(--page); background-attachment: fixed;
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
       padding: 20px; color: var(--ink);
