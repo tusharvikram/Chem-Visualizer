@@ -756,6 +756,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
     .dashboard {
       display: grid; grid-template-columns: 350px 1fr; gap: 20px;
+      /* minmax(0, 1fr), not the default auto: an auto row keeps its content
+         height and overflows the max-height below, which clipped the sidebar's
+         last child instead of letting the scroll region shrink. */
+      grid-template-rows: minmax(0, 1fr);
       width: 100%; max-width: 1100px;
       /* Size to the sidebar's content rather than to a fixed height. A fixed
          height either scrolls the sidebar on a short window or wastes space in
@@ -772,8 +776,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
     .sidebar {
       padding: 18px 24px; border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 10px; overflow: hidden;
+      min-height: 0;
     }
+    .sidebar-scroll {
+      /* min-height:0 is required or the flex item refuses to shrink and the
+         overflow never engages. */
+      flex: 1; min-height: 0; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .credit { flex-shrink: 0; }
     h1 { font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); }
     h1 span { color: var(--primary); }
     .subtitle { font-size: 0.9rem; color: var(--ink-muted); font-weight: 500; margin-top: 5px; }
@@ -872,6 +884,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <div class="dashboard">
     <div class="sidebar">
+      <!-- Only this region scrolls. The credit below sits outside it so it stays
+           visible no matter how tall the panel grows: showing the dipole note and
+           a molecule with several bond angles was pushing it out of view. -->
+      <div class="sidebar-scroll">
       <div>
         <h1>Chem<span>101</span></h1>
         <div class="subtitle">Ultimate VSEPR Edition</div>
@@ -902,9 +918,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
         <div class="info-row"><span class="info-label">Hybridization</span><span class="info-val" id="val-hybrid">--</span></div>
         <div style="margin-top:8px; font-size:0.8rem; color:#666;" id="val-angles"></div>
-        <div class="angle-note">Idealized VSEPR angles — lone pairs compress real bonds (ClF₃ measures 87.5°).</div>
+        <div class="angle-note">Idealized VSEPR angles. Lone pairs compress real bonds (ClF₃ measures 87.5°).</div>
       </div>
       <div class="fact-box" id="val-fact">Select a molecule to learn more.</div>
+      </div>
       <div class="credit">
         Built by <a href="https://tushar-vikram.com" target="_blank" rel="noopener noreferrer">Tushar Vikram</a>
       </div>
@@ -1015,9 +1032,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       if(!showDipole || !d) {
         note.textContent = '';
       } else if(d.cancels) {
-        note.textContent = 'Bond dipoles cancel — no net dipole.';
+        note.textContent = 'Bond dipoles cancel, so there is no net dipole.';
       } else {
-        note.textContent = 'Arrow points to the negative end (bond-dipole sum ' + d.magnitude + ').';
+        note.textContent = 'Arrow points to the negative end. Sum ' + d.magnitude + '.';
         viewer.addArrow({
           start: {x: d.start[0], y: d.start[1], z: d.start[2]},
           end:   {x: d.end[0],   y: d.end[1],   z: d.end[2]},
