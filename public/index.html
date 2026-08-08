@@ -79,9 +79,26 @@
       border-left: 4px solid var(--accent); padding: 12px; border-radius: 0 10px 10px 0;
       font-size: 0.85rem; font-style: italic; line-height: 1.4;
     }
+    .card-divider {
+      height: 1px; background: rgba(31,41,55,0.10); margin: 9px 0;
+    }
     .credit {
       font-size: 0.78rem; color: #6b7280; text-align: center;
       padding-top: 2px; letter-spacing: 0.01em;
+    }
+    /* Laptops at high display scaling leave a short viewport — a 16" 2880x1800
+       panel at 200% has only ~630px once browser chrome is subtracted. Compact
+       the panel there rather than letting it scroll or clip. */
+    @media (max-height: 760px) {
+      .sidebar { gap: 8px; padding: 14px 20px; }
+      h1 { font-size: 1.35rem; }
+      .subtitle { font-size: 0.78rem; margin-top: 2px; }
+      .info-card { padding: 10px 12px; }
+      .info-row { font-size: 0.84rem; margin-bottom: 4px; }
+      .btn { padding: 8px; font-size: 0.88rem; }
+      select { padding: 9px; font-size: 0.92rem; }
+      .fact-box { padding: 9px 10px; font-size: 0.78rem; }
+      .card-divider { margin: 7px 0; }
     }
     .credit a {
       color: var(--primary); font-weight: 600; text-decoration: none;
@@ -143,8 +160,7 @@
         <div class="info-row"><span class="info-label">Mol. Weight</span><span class="info-val" id="val-mw">--</span></div>
         <div class="info-row"><span class="info-label">Polarity</span><span id="val-polarity">--</span></div>
         <div class="dipole-note" id="dipole-note"></div>
-      </div>
-      <div class="info-card">
+        <div class="card-divider"></div>
         <!-- Ordered as the problem is worked: count domains, classify, then read
              off the two geometries and the hybridisation. -->
         <div class="info-row"><span class="info-label">Electron Domains</span><span class="info-val" id="val-steric">--</span></div>
