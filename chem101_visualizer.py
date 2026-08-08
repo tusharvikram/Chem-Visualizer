@@ -743,18 +743,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .dashboard {
       display: grid; grid-template-columns: 350px 1fr; gap: 20px;
       width: 100%; max-width: 1100px;
-      /* Grow with the window instead of a fixed 650px: the controls and the
-         angle note otherwise push the fact box out of the sidebar. */
-      height: min(760px, calc(100vh - 40px)); min-height: 560px;
+      /* Size to the sidebar's content rather than to a fixed height. A fixed
+         height either scrolls the sidebar on a short window or wastes space in
+         the viewer on a tall one; this uses exactly what the panel needs and
+         only scrolls when the window genuinely cannot fit it. */
+      height: auto;
+      min-height: min(600px, calc(100vh - 40px));
+      max-height: calc(100vh - 40px);
       background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border); border-radius: 24px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;
     }
     .sidebar {
       padding: 18px 24px; border-right: 1px solid rgba(255,255,255,0.3);
-      display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
     }
-    h1 { font-weight: 800; font-size: 1.8rem; letter-spacing: -0.02em; line-height: 1.1; }
+    h1 { font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; line-height: 1.1; }
     h1 span { background: -webkit-linear-gradient(45deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .subtitle { font-size: 0.9rem; color: #6b7280; font-weight: 500; margin-top: 5px; }
     label { font-size: 0.85rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -772,9 +776,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
     .btn.active { background: var(--primary); color: #fff; }
     .info-card {
-      background: rgba(255,255,255,0.4); border-radius: 16px; padding: 15px; border: 1px solid rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.4); border-radius: 16px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.6);
     }
-    .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
+    .info-row:last-of-type { margin-bottom: 0; }
     .info-label { color: #6b7280; }
     .info-val { font-weight: 600; }
     .badge {
@@ -861,7 +866,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="info-row"><span class="info-label">Mol. Geometry</span><span class="info-val" style="color:var(--primary)" id="val-desc">--</span></div>
         <div class="info-row"><span class="info-label">Hybridization</span><span class="info-val" id="val-hybrid">--</span></div>
         <div style="margin-top:8px; font-size:0.8rem; color:#666;" id="val-angles"></div>
-        <div class="angle-note">Idealized VSEPR angles. Measured values differ where lone pairs compress bonds (ClF₃ is 87.5° in practice).</div>
+        <div class="angle-note">Idealized VSEPR angles — lone pairs compress real bonds (ClF₃ measures 87.5°).</div>
       </div>
       <div class="fact-box" id="val-fact">Select a molecule to learn more.</div>
       <div class="credit">
