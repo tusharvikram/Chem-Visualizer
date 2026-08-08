@@ -100,6 +100,12 @@ then redeploy.
 6. The build compares that computed dipole against each molecule's stated polarity and reports any disagreement — a wrong coordinate set usually breaks a cancellation, so this doubles as a check on the geometry
 7. Everything is serialized into a single self-contained HTML file with embedded JSON data and 3Dmol.js for rendering
 
+## Author
+
+Built by **Tushar Vikram** — [tushar-vikram.com](https://tushar-vikram.com)
+
+Live at [chem.tushar-vikram.com](https://chem.tushar-vikram.com)
+
 ## License
 
 Released under the MIT License.

@@ -38,8 +38,8 @@
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;
     }
     .sidebar {
-      padding: 24px 26px; border-right: 1px solid rgba(255,255,255,0.3);
-      display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
+      padding: 18px 24px; border-right: 1px solid rgba(255,255,255,0.3);
+      display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
     }
     h1 { font-weight: 800; font-size: 1.8rem; letter-spacing: -0.02em; line-height: 1.1; }
     h1 span { background: -webkit-linear-gradient(45deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -74,6 +74,15 @@
       border-left: 4px solid var(--accent); padding: 12px; border-radius: 0 10px 10px 0;
       font-size: 0.85rem; font-style: italic; line-height: 1.4;
     }
+    .credit {
+      font-size: 0.78rem; color: #6b7280; text-align: center;
+      padding-top: 2px; letter-spacing: 0.01em;
+    }
+    .credit a {
+      color: var(--primary); font-weight: 600; text-decoration: none;
+      border-bottom: 1px solid rgba(99, 102, 241, 0.35); transition: all 0.15s;
+    }
+    .credit a:hover { color: var(--accent); border-bottom-color: var(--accent); }
     .viewer-area {
       position: relative; background: #fff; margin: 10px; border-radius: 20px;
       overflow: hidden; box-shadow: inset 0 0 40px rgba(0,0,0,0.02);
@@ -142,6 +151,9 @@
         <div class="angle-note">Idealized VSEPR angles. Measured values differ where lone pairs compress bonds (ClF₃ is 87.5° in practice).</div>
       </div>
       <div class="fact-box" id="val-fact">Select a molecule to learn more.</div>
+      <div class="credit">
+        Built by <a href="https://tushar-vikram.com" target="_blank" rel="noopener noreferrer">Tushar Vikram</a>
+      </div>
     </div>
 
     <div class="viewer-area">
