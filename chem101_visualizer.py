@@ -945,6 +945,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let spinning = true;
     let showDipole = false;
     let currIdx = 0;
+    let viewBeforeCO2 = null;
+
+    function isCO2(molecule) {
+      return molecule.analysis.formula === 'CO₂';
+    }
 
     // Jmol/CPK colours, matching the colorscheme the viewer renders atoms with.
     const ELEMENTS = {
@@ -995,12 +1000,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     function loadMol(idx) {
       if(!viewer) return;
-      currIdx = idx;
       const m = DATA[idx];
+      const view = viewer.getView();
+      if (isCO2(m)) {
+        viewBeforeCO2 ??= view.slice(4, 8);
+        // 3Dmol offsets these collinear double bonds along Z. Roll that
+        // separation into the screen plane so both sticks are visible.
+        view.splice(4, 4, Math.SQRT1_2, 0, 0, Math.SQRT1_2);
+      } else if (viewBeforeCO2) {
+        view.splice(4, 4, ...viewBeforeCO2);
+        viewBeforeCO2 = null;
+      }
+      currIdx = idx;
       viewer.clear();
+      viewer.setView(view);
       viewer.addModel(m.molblock, "sdf");
       applyStyle();
-      viewer.spin(spinning ? 'y' : false, 0.5);
+      updateSpin();
       viewer.setHoverable({}, true, function(atom, viewer, event, container) {
         if(!atom.label) {
           let txt = atom.elem === '*' ? 'Lone Pair' : atom.elem;
@@ -1068,7 +1084,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const btn = document.getElementById('btn-spin');
       btn.textContent = spinning ? 'Pause Rotation' : 'Resume Rotation';
       btn.className = spinning ? 'btn active' : 'btn';
-      if (viewer) viewer.spin(spinning ? 'y' : false, 0.5);
+      updateSpin();
+    }
+
+    function updateSpin() {
+      // For CO₂, model Z is now the vertical axis on screen.
+      if (viewer) viewer.spin(spinning ? (isCO2(DATA[currIdx]) ? 'z' : 'y') : false, 0.5);
     }
 
     function renderLegend(a) {
